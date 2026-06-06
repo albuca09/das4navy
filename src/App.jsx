@@ -3,229 +3,383 @@ import "./App.css";
 
 const FREQS = [0.6, 10, 20, 40, 80, 160, 320];
 
-function randomEnergy(x, y, t, freq) {
-  const a = Math.sin(x * 0.018 + t * 0.018 + freq * 0.04);
-  const b = Math.cos(y * 0.026 - t * 0.012 + freq * 0.01);
-  const c = Math.sin((x + y) * 0.012 + t * 0.02);
-  return Math.max(0, (a + b + c + 1.2) / 4);
+const CABLE_PATH_NORM = [
+  [0.26, 0.18],
+  [0.46, 0.16],
+  [0.52, 0.31],
+  [0.84, 0.36],
+  [0.82, 0.72],
+  [0.62, 0.78],
+  [0.35, 0.68],
+  [0.38, 0.35],
+  [0.26, 0.18],
+];
+
+function clamp(v, a, b) {
+  return Math.max(a, Math.min(b, v));
 }
 
-function drawSpectrogram(ctx, w, h, t, activeFreq) {
-  const img = ctx.createImageData(w, h);
-  const data = img.data;
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function dist(a, b) {
+  const dx = a[0] - b[0];
+  const dy = a[1] - b[1];
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function buildPathPoints(w, h) {
+  const pts = CABLE_PATH_NORM.map(([x, y]) => [x * w, y * h]);
+  const dense = [];
+
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i];
+    const b = pts[i + 1];
+    const d = dist(a, b);
+    const steps = Math.max(8, Math.floor(d / 8));
+
+    for (let j = 0; j < steps; j++) {
+      const t = j / steps;
+      dense.push([lerp(a[0], b[0], t), lerp(a[1], b[1], t)]);
+    }
+  }
+
+  return dense;
+}
+
+function movingPulseEnergy(s, time, activeFreq) {
+  const freqFactor = Math.log2(activeFreq + 1);
+  const speed1 = 0.035 + freqFactor * 0.002;
+  const speed2 = 0.021 + freqFactor * 0.0015;
+  const speed3 = 0.014 + freqFactor * 0.001;
+
+  const p1 = (time * speed1) % 1;
+  const p2 = (0.35 + time * speed2) % 1;
+  const p3 = (0.72 - time * speed3 + 1) % 1;
+
+  const pulse = (p, width, amp) => {
+    const d = Math.min(Math.abs(s - p), 1 - Math.abs(s - p));
+    return amp * Math.exp(-(d * d) / (2 * width * width));
+  };
+
+  const standing =
+    0.18 * Math.sin(34 * s + time * 0.06) +
+    0.12 * Math.sin(77 * s - time * 0.035) +
+    0.08 * Math.cos(121 * s + activeFreq * 0.04);
+
+  const e =
+    pulse(p1, 0.025, 1.1) +
+    pulse(p2, 0.038, 0.9) +
+    pulse(p3, 0.018, 0.8) +
+    standing;
+
+  return clamp(e, 0, 1.35);
+}
+
+function drawSpectrogram(ctx, w, h, time, activeFreq) {
+  const image = ctx.createImageData(w, h);
+  const data = image.data;
+
+  const scroll = time * 2.2;
+  const freqFactor = Math.log2(activeFreq + 1);
 
   for (let y = 0; y < h; y++) {
+    const yy = y + scroll;
+
     for (let x = 0; x < w; x++) {
-      let v =
-        0.28 * Math.sin(x * 0.035 + y * 0.018 + t * 0.03) +
-        0.22 * Math.cos(x * 0.012 - y * 0.042 + t * 0.018) +
-        0.18 * Math.sin((x + y) * 0.025 + activeFreq * 0.08);
+      const nx = x / w;
+      const ny = yy / h;
 
-      const event1 = Math.abs(x - ((y * 0.85 + t * 1.5) % w)) < 3 ? 1.4 : 0;
-      const event2 = Math.abs(x - ((w - y * 0.65 + t * 1.1) % w)) < 2 ? 1.0 : 0;
-      const vertical = Math.abs(x - w * 0.48) < 2 ? 1.2 : 0;
-      const lowBand = y > h * 0.68 && y < h * 0.72 ? 1.5 : 0;
+      let v = 0;
 
-      v = Math.max(0, v + event1 + event2 + vertical + lowBand);
-      v = Math.min(1, v);
+      v += 0.22 * Math.sin(nx * 95 + ny * 42 + time * 0.02);
+      v += 0.18 * Math.cos(nx * 39 - ny * 88 + activeFreq * 0.015);
+      v += 0.15 * Math.sin((nx + ny) * 170 + time * 0.04);
+
+      const lowHorizontal = Math.abs(y - h * 0.69) < 4 ? 1.2 : 0;
+      const magentaColumn = Math.abs(x - w * 0.50) < 2 ? 1.1 : 0;
+
+      const diagonal1 =
+        Math.abs(x - ((yy * 0.68 + 60 * Math.sin(yy * 0.015)) % w)) < 3
+          ? 1.1
+          : 0;
+
+      const diagonal2 =
+        Math.abs(x - ((w - yy * 0.48 + 80 * Math.cos(yy * 0.011)) % w)) < 3
+          ? 0.9
+          : 0;
+
+      const comb =
+        Math.abs(Math.sin((x * 0.032 + yy * 0.011 + freqFactor) * Math.PI)) > 0.985
+          ? 0.55
+          : 0;
+
+      const burstZone =
+        Math.sin(yy * 0.026 + time * 0.04) > 0.72 &&
+        Math.sin(x * 0.035 + yy * 0.012) > 0.55
+          ? 0.8
+          : 0;
+
+      v += diagonal1 + diagonal2 + comb + burstZone + lowHorizontal + magentaColumn;
+      v += 0.18 * Math.random();
+
+      v = clamp(v, 0, 1);
 
       const i = (y * w + x) * 4;
 
-      data[i] = 10 + v * 220;
-      data[i + 1] = 35 + Math.pow(v, 1.7) * 220;
-      data[i + 2] = 70 + (1 - v) * 120;
+      const blue = 80 + 140 * (1 - v);
+      const green = 35 + 230 * Math.pow(v, 1.4);
+      const red = 8 + 245 * Math.pow(v, 2.3);
+
+      data[i] = red;
+      data[i + 1] = green;
+      data[i + 2] = blue;
       data[i + 3] = 255;
     }
   }
 
-  ctx.putImageData(img, 0, 0);
+  ctx.putImageData(image, 0, 0);
+
+  const cursorY = h * 0.69;
+
+  ctx.strokeStyle = "rgba(255, 0, 0, 0.96)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, cursorY);
+  ctx.lineTo(w, cursorY);
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(255, 58, 220, 0.9)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(w * 0.5, 0);
+  ctx.lineTo(w * 0.5, h);
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(0,0,0,0.72)";
+  ctx.beginPath();
+  ctx.roundRect(w - 172, cursorY - 18, 148, 36, 18);
+  ctx.fill();
 
   ctx.strokeStyle = "rgba(255, 0, 0, 0.95)";
-  ctx.lineWidth = 3;
-  const lineY = h * 0.69;
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(0, lineY);
-  ctx.lineTo(w, lineY);
+  ctx.roundRect(w - 172, cursorY - 18, 148, 36, 18);
   ctx.stroke();
 
-  ctx.strokeStyle = "rgba(255, 68, 220, 0.85)";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(w * 0.48, 0);
-  ctx.lineTo(w * 0.48, h);
-  ctx.stroke();
-
-  ctx.fillStyle = "rgba(0,0,0,0.55)";
-  ctx.fillRect(w - 170, lineY - 18, 150, 36);
-  ctx.strokeStyle = "red";
-  ctx.strokeRect(w - 170, lineY - 18, 150, 36);
   ctx.fillStyle = "#ff3030";
   ctx.font = "bold 18px monospace";
-  ctx.fillText("18:07:54", w - 153, lineY + 6);
+  ctx.fillText("18:07:54", w - 153, cursorY + 6);
 }
 
-function drawMap(ctx, w, h, t, activeFreq) {
-  ctx.clearRect(0, 0, w, h);
+function drawBaseMap(ctx, w, h) {
+  const grad = ctx.createRadialGradient(
+    w * 0.47,
+    h * 0.46,
+    20,
+    w * 0.48,
+    h * 0.5,
+    w * 0.95
+  );
 
-  const grad = ctx.createRadialGradient(w * 0.45, h * 0.45, 30, w * 0.45, h * 0.45, w);
-  grad.addColorStop(0, "#222");
-  grad.addColorStop(1, "#050505");
+  grad.addColorStop(0, "#252525");
+  grad.addColorStop(0.55, "#111");
+  grad.addColorStop(1, "#020202");
+
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, w, h);
 
   ctx.save();
-  ctx.translate(w * 0.05, h * 0.02);
+  ctx.translate(w * 0.02, h * 0.0);
   ctx.rotate(-0.12);
 
-  ctx.strokeStyle = "rgba(120,120,120,0.32)";
+  ctx.strokeStyle = "rgba(180,180,180,0.22)";
   ctx.lineWidth = 2;
 
-  for (let i = -2; i < 12; i++) {
+  for (let i = -4; i < 14; i++) {
     ctx.beginPath();
-    ctx.moveTo(i * 120, -50);
-    ctx.lineTo(i * 120 + 120, h + 80);
+    ctx.moveTo(i * 120, -80);
+    ctx.lineTo(i * 120 + 130, h + 100);
     ctx.stroke();
   }
 
-  for (let j = 0; j < 10; j++) {
+  for (let j = -1; j < 12; j++) {
     ctx.beginPath();
-    ctx.moveTo(-80, j * 85);
-    ctx.lineTo(w + 120, j * 85 - 40);
+    ctx.moveTo(-120, j * 82);
+    ctx.lineTo(w + 150, j * 82 - 45);
     ctx.stroke();
   }
 
-  ctx.fillStyle = "rgba(120,120,120,0.38)";
-  for (let i = 0; i < 32; i++) {
-    const x = 80 + (i % 8) * 150 + Math.sin(i) * 25;
-    const y = 70 + Math.floor(i / 8) * 130 + Math.cos(i) * 20;
-    ctx.fillRect(x, y, 70 + (i % 3) * 30, 40 + (i % 4) * 18);
+  ctx.setLineDash([2, 7]);
+  ctx.strokeStyle = "rgba(210,210,210,0.18)";
+
+  for (let j = 0; j < 9; j++) {
+    ctx.beginPath();
+    ctx.moveTo(-50, j * 95 + 30);
+    ctx.lineTo(w + 100, j * 95 + 5);
+    ctx.stroke();
+  }
+
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = "rgba(130,130,130,0.35)";
+
+  for (let i = 0; i < 38; i++) {
+    const x = 70 + (i % 9) * 138 + Math.sin(i * 1.7) * 30;
+    const y = 65 + Math.floor(i / 9) * 125 + Math.cos(i * 1.3) * 24;
+    const bw = 55 + (i % 4) * 22;
+    const bh = 38 + (i % 5) * 13;
+    ctx.fillRect(x, y, bw, bh);
   }
 
   ctx.restore();
+}
 
-  const path = [
-    [w * 0.26, h * 0.18],
-    [w * 0.46, h * 0.16],
-    [w * 0.52, h * 0.31],
-    [w * 0.84, h * 0.36],
-    [w * 0.82, h * 0.72],
-    [w * 0.62, h * 0.78],
-    [w * 0.35, h * 0.68],
-    [w * 0.38, h * 0.35],
-    [w * 0.26, h * 0.18],
-  ];
+function drawCable(ctx, w, h, time, activeFreq) {
+  const path = CABLE_PATH_NORM.map(([x, y]) => [x * w, y * h]);
+  const dense = buildPathPoints(w, h);
 
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
-  ctx.strokeStyle = "rgba(70,150,255,0.35)";
-  ctx.lineWidth = 22;
+  ctx.shadowColor = "rgba(80,160,255,0.8)";
+  ctx.shadowBlur = 16;
+
+  ctx.strokeStyle = "rgba(45,115,255,0.32)";
+  ctx.lineWidth = 24;
   ctx.beginPath();
-  path.forEach(([x, y], idx) => {
-    if (idx === 0) ctx.moveTo(x, y);
+
+  path.forEach(([x, y], i) => {
+    if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
+
   ctx.stroke();
 
-  ctx.strokeStyle = "rgba(120,200,255,0.95)";
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "rgba(125,205,255,0.9)";
   ctx.lineWidth = 4;
   ctx.beginPath();
-  path.forEach(([x, y], idx) => {
-    if (idx === 0) ctx.moveTo(x, y);
+
+  path.forEach(([x, y], i) => {
+    if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
+
   ctx.stroke();
 
-  for (let i = 0; i < path.length - 1; i++) {
-    const [x1, y1] = path[i];
-    const [x2, y2] = path[i + 1];
+  for (let i = 0; i < dense.length; i++) {
+    const s = i / Math.max(1, dense.length - 1);
+    const [x, y] = dense[i];
+    const e = movingPulseEnergy(s, time, activeFreq);
 
-    for (let s = 0; s <= 1; s += 0.04) {
-      const x = x1 + (x2 - x1) * s;
-      const y = y1 + (y2 - y1) * s;
-      const e = randomEnergy(x, y, t, activeFreq);
+    if (e < 0.18) continue;
 
-      if (e > 0.42) {
-        const r = 4 + e * 20;
-        const height = 10 + e * 55;
+    const wave = 0.5 + 0.5 * Math.sin(time * 0.11 + s * 95);
+    const r = 5 + e * 20;
+    const lift = 8 + e * 58 + wave * 16;
 
-        const g = ctx.createRadialGradient(x, y - height, 2, x, y, r);
-        g.addColorStop(0, `rgba(220,255,30,${0.9 * e})`);
-        g.addColorStop(0.45, `rgba(90,220,255,${0.45 * e})`);
-        g.addColorStop(1, "rgba(50,120,255,0)");
+    const g = ctx.createRadialGradient(x, y - lift, 2, x, y, r * 1.8);
+    g.addColorStop(0, `rgba(230,255,20,${0.85 * e})`);
+    g.addColorStop(0.38, `rgba(125,235,255,${0.5 * e})`);
+    g.addColorStop(0.72, `rgba(35,110,255,${0.28 * e})`);
+    g.addColorStop(1, "rgba(20,60,200,0)");
 
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.ellipse(x, y - height * 0.25, r, r * 0.65, 0, 0, Math.PI * 2);
-        ctx.fill();
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(x, y - lift * 0.32, r * 1.3, r * 0.72, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-        ctx.strokeStyle = `rgba(170,230,255,${0.3 * e})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x, y - height);
-        ctx.stroke();
-      }
+    if (e > 0.55) {
+      ctx.strokeStyle = `rgba(190,240,255,${0.35 * e})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y - lift);
+      ctx.stroke();
     }
   }
 
-  const selected = path[3];
+  const selectedIndex = Math.floor(((time * 0.018) % 1) * dense.length);
+  const selected = dense[selectedIndex] || path[3];
+
+  ctx.shadowColor = "rgba(255,70,180,0.9)";
+  ctx.shadowBlur = 16;
   ctx.fillStyle = "#ff4fb3";
   ctx.beginPath();
-  ctx.arc(selected[0], selected[1], 11, 0, Math.PI * 2);
+  ctx.arc(selected[0], selected[1], 10, 0, Math.PI * 2);
   ctx.fill();
+  ctx.shadowBlur = 0;
+}
 
+function drawLabels(ctx, w, h) {
   ctx.fillStyle = "white";
-  ctx.font = "bold 42px Arial";
+  ctx.font = "bold 46px Arial";
   ctx.fillText("DAS4Navy", 36, 64);
 
-  ctx.fillStyle = "rgba(255,255,255,0.72)";
+  ctx.fillStyle = "rgba(255,255,255,0.68)";
   ctx.font = "15px Arial";
   ctx.fillText("Distributed Acoustic Sensing Visualizer", 40, 92);
+}
+
+function drawMap(ctx, w, h, time, activeFreq) {
+  ctx.clearRect(0, 0, w, h);
+  drawBaseMap(ctx, w, h);
+  drawCable(ctx, w, h, time, activeFreq);
+  drawLabels(ctx, w, h);
 }
 
 export default function App() {
   const specRef = useRef(null);
   const mapRef = useRef(null);
+  const animationRef = useRef(null);
+
   const [activeFreq, setActiveFreq] = useState(0.6);
   const [running, setRunning] = useState(true);
 
   useEffect(() => {
-    let raf;
-    let t = 0;
+    let time = 0;
 
-    function resizeCanvas(canvas) {
+    function prepareCanvas(canvas) {
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.floor(rect.width * dpr);
-      canvas.height = Math.floor(rect.height * dpr);
+
+      const width = Math.max(1, Math.floor(rect.width));
+      const height = Math.max(1, Math.floor(rect.height));
+
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+
       const ctx = canvas.getContext("2d");
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      return [ctx, rect.width, rect.height];
+
+      return [ctx, width, height];
     }
 
     function loop() {
-      if (running) t += 1;
+      if (running) time += 1;
 
-      const spec = specRef.current;
-      const map = mapRef.current;
+      const specCanvas = specRef.current;
+      const mapCanvas = mapRef.current;
 
-      if (spec && map) {
-        const [sctx, sw, sh] = resizeCanvas(spec);
-        const [mctx, mw, mh] = resizeCanvas(map);
-        drawSpectrogram(sctx, Math.floor(sw), Math.floor(sh), t, activeFreq);
-        drawMap(mctx, mw, mh, t, activeFreq);
+      if (specCanvas && mapCanvas) {
+        const [specCtx, sw, sh] = prepareCanvas(specCanvas);
+        const [mapCtx, mw, mh] = prepareCanvas(mapCanvas);
+
+        drawSpectrogram(specCtx, sw, sh, time, activeFreq);
+        drawMap(mapCtx, mw, mh, time, activeFreq);
       }
 
-      raf = requestAnimationFrame(loop);
+      animationRef.current = requestAnimationFrame(loop);
     }
 
     loop();
 
-    window.addEventListener("resize", loop);
     return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", loop);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
     };
   }, [activeFreq, running]);
 
@@ -256,7 +410,7 @@ export default function App() {
 
         <div className="info-box">
           <strong>Selected band:</strong> {activeFreq} Hz<br />
-          Synthetic demonstration inspired by distributed acoustic sensing.
+          Waterfall cursor + moving energy pulses along the sensing cable.
         </div>
       </section>
     </main>
