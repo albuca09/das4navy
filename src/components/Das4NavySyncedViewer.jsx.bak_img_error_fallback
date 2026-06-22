@@ -538,14 +538,6 @@ export default function Das4NavySyncedViewer() {
               className="spec-img spec-video-img"
               src={assetUrl(videoSpec?.image_url || currentSpec?.image_url)}
               alt="DAS/XAI spectrogram video frame"
-              onError={(e) => {
-                console.warn("Spectrogram image failed:", e.currentTarget.src);
-                e.currentTarget.style.opacity = 0.15;
-                setFrameIndex((v) => {
-                  if (!Array.isArray(frames) || frames.length <= 1) return v;
-                  return (v + 1) % frames.length;
-                });
-              }}
             />
           ) : (
             <div className="spec-empty">
