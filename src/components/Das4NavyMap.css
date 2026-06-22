@@ -1,0 +1,204 @@
+﻿html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+.das-real-page {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+  background: #07111f;
+  color: #f8fafc;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.das-real-panel {
+  width: 360px;
+  min-width: 360px;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: 18px;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #0f172a, #020617);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.das-real-panel h1 {
+  margin: 0;
+  font-size: 32px;
+  letter-spacing: 0.05em;
+}
+
+.das-real-panel h2 {
+  margin: 4px 0 20px 0;
+  color: #94a3b8;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.das-real-card {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.das-real-card b {
+  display: block;
+  color: #94a3b8;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.das-real-card span {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.das-real-card strong {
+  font-size: 28px;
+}
+
+.das-real-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.das-real-grid .das-real-card {
+  margin-bottom: 0;
+}
+
+.das-real-card button {
+  width: 100%;
+  margin: 5px 0;
+  padding: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: #2563eb;
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.das-real-card input[type="range"] {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.das-real-card small {
+  display: block;
+  margin-top: 8px;
+  color: #cbd5e1;
+}
+
+.das-real-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0;
+  font-size: 14px;
+}
+
+.das-real-legend {
+  margin-top: 18px;
+  font-size: 13px;
+  color: #e2e8f0;
+}
+
+.das-real-legend p {
+  margin: 8px 0;
+}
+
+.ln {
+  display: inline-block;
+  width: 34px;
+  height: 4px;
+  border-radius: 10px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.ln.north {
+  background: #00a2ff;
+}
+
+.ln.south {
+  background: #00ff88;
+}
+
+.ln.ais {
+  background: #ff9f1a;
+}
+
+.ln.das {
+  background: repeating-linear-gradient(
+    90deg,
+    #ff3155,
+    #ff3155 7px,
+    transparent 7px,
+    transparent 12px
+  );
+}
+
+.dot {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  margin-right: 18px;
+  vertical-align: middle;
+}
+
+.dot.xai {
+  background: #d946ef;
+}
+
+.das-real-map-wrap {
+  flex: 1;
+  height: 100vh;
+}
+
+.das-real-map {
+  width: 100%;
+  height: 100%;
+}
+
+.das-real-marker {
+  background: transparent;
+  border: 0;
+}
+
+.das-real-marker div {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 11px;
+  font-weight: 900;
+  border: 3px solid white;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+}
+
+.das-real-marker.ais div {
+  background: #ff9f1a;
+}
+
+.das-real-marker.das div {
+  background: #ff3155;
+}
+
+.leaflet-popup-content {
+  font-size: 13px;
+  line-height: 1.45;
+}

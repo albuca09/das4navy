@@ -1,0 +1,349 @@
+﻿relative_path,extension,size_bytes,size_human,inspection,json_type,keys,preview,error
+node_modules\flatted\cjs\package.json,.json,19,19.00 B,JSON,dict,['type'],"{
+  ""type"": ""commonjs""
+}",
+node_modules\@babel\types\package.json,.json,1065,1.04 KB,JSON,dict,"['name', 'version', 'description', 'author', 'homepage', 'bugs', 'license', 'publishConfig', 'repository', 'main', 'dependencies', 'devDependencies', 'engines', 'type', 'types', 'typesVersions']","{
+  ""name"": ""@babel/types"",
+  ""version"": ""7.29.7"",
+  ""description"": ""Babel Types is a Lodash-esque utility library for AST nodes"",
+  ""author"": ""The Babel Team (https://babel.dev/team)"",
+  ""homepage"": ""https://babel.dev/docs/en/next/babel-types"",
+  ""bugs"": ""https://github.com/babel/babel/issues?utf8=%E2%9C%93&q=is%3Aissue+label%3A%22pkg%3A%20types%22+is%3Aopen"",
+  ""license"": ""MIT"",
+  ""publishConfig"": {
+    ""access"": ""public""
+  },
+  ""repository"": {
+    ""type"": ""git"",
+    ""url"": ""https://github.com/babel/babel.git"",
+    ""directory"": ""packages/babel-types""
+  },
+  ""main"": ""./lib/index.js"",
+  ""dependencies"": {
+    ""@babel/helper-string-parser"": ""^7.29.7"",
+    ""@babel/helper-validator-identifier"": ""^7.29.7""
+  },
+  ""devDependencies"": {
+    ""@babel/generator"": ""^7.29.7"",
+    ""@babel/helper-fixtures"": ""^7.29.7"",
+    ""@babel/parser"": ""^7.29.7""
+  },
+  ""engines"": {
+    ""node"": "">=6.9.0""
+  },
+  ""type"": ""commonjs"",
+  ""types"": ""./lib/index-legacy.d.ts"",
+  ""typesVersions"": {
+    "">=4.1"": {
+      ""lib/index-legacy.d.ts"": [
+        ""lib/index.d.ts""
+      ]
+    }
+  }
+}",
+node_modules\globals\globals.json,.json,102706,100.30 KB,JSON erro ou grande demais,,,"{
+	""amd"": {
+		""define"": false,
+		""require"": false
+	},
+	""applescript"": {
+		""$"": false,
+		""Application"": false,
+		""Automation"": false,
+		""console"": false,
+		""delay"": false,
+		""Library"": false,
+		""ObjC"": false,
+		""ObjectSpecifier"": false,
+		""Path"": false,
+		""Progress"": false,
+		""Ref"": false
+	},
+	""astro"": {
+		""Astro"": false",JSONDecodeError('Expecting property name enclosed in double quotes: line 200 column 29 (char 5338)')
+node_modules\.vite\deps\package.json,.json,23,23.00 B,JSON,dict,['type'],"{
+  ""type"": ""module""
+}",
+node_modules\balanced-match\dist\esm\package.json,.json,23,23.00 B,JSON,dict,['type'],"{
+  ""type"": ""module""
+}",
+node_modules\brace-expansion\dist\esm\package.json,.json,23,23.00 B,JSON,dict,['type'],"{
+  ""type"": ""module""
+}",
+node_modules\minimatch\dist\esm\package.json,.json,23,23.00 B,JSON,dict,['type'],"{
+  ""type"": ""module""
+}",
+node_modules\brace-expansion\dist\commonjs\package.json,.json,25,25.00 B,JSON,dict,['type'],"{
+  ""type"": ""commonjs""
+}",
+node_modules\minimatch\dist\commonjs\package.json,.json,25,25.00 B,JSON,dict,['type'],"{
+  ""type"": ""commonjs""
+}",
+node_modules\balanced-match\dist\commonjs\package.json,.json,25,25.00 B,JSON,dict,['type'],"{
+  ""type"": ""commonjs""
+}",
+node_modules\@oxc-project\types\README.md,.md,55,55.00 B,Texto,,,"# Oxc Types
+
+Typescript definitions for Oxc AST nodes.",
+node_modules\flat-cache\README.md,.md,3066,2.99 KB,Texto,,,"# flat-cache
+
+> A stupidly simple key/value storage using files to persist the data
+
+[![NPM Version](https://img.shields.io/npm/v/flat-cache.svg?style=flat)](https://npmjs.org/package/flat-cache)
+[![tests](https://github.com/jaredwray/flat-cache/actions/workflows/tests.yaml/badge.svg?branch=master)](https://github.com/jaredwray/flat-cache/actions/workflows/tests.yaml)
+[![codecov](https://codecov.io/github/jaredwray/flat-cache/branch/master/graph/badge.svg?token=KxR95XT3NF)](https://codecov.io/github/jaredwray/flat-cache)
+[![npm](https://img.shields.io/npm/dm/flat-cache)](https://npmjs.com/package/flat-cache)
+
+## install
+
+```bash
+npm i --save flat-cache
+```
+
+## Usage
+
+```js
+const flatCache = require('flat-cache');
+// loads the cache, if one does not exists for the given",
+node_modules\vite\LICENSE.md,.md,108460,105.92 KB,Texto,,,"# Vite core license
+Vite is released under the MIT license:
+
+MIT License
+
+Copyright (c) 2019-present, VoidZero Inc. and Vite contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the ""Software""), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE",
+node_modules\hermes-estree\README.md,.md,83,83.00 B,Texto,,,"# hermes-estree
+
+Flow types for the Flow-ESTree spec produced by the hermes parser",
+node_modules\@rolldown\binding-win32-x64-msvc\README.md,.md,108,108.00 B,Texto,,,"# `@rolldown/binding-win32-x64-msvc`
+
+This is the **x86_64-pc-windows-msvc** binary for `@rolldown/binding`",
+node_modules\lightningcss-win32-x64-msvc\README.md,.md,121,121.00 B,Texto,,,This is the x86_64-pc-windows-msvc build of lightningcss. See https://github.com/parcel-bundler/lightningcss for details.,
+node_modules\ajv\lib\dotjs\README.md,.md,149,149.00 B,Texto,,,"These files are compiled dot templates from dot folder.
+
+Do NOT edit them directly, edit the templates and run `npm run build` from main ajv folder.",
+node_modules\caniuse-lite\README.md,.md,164,164.00 B,Texto,,,"# caniuse-lite
+
+A smaller version of caniuse-db, with only the essentials!
+
+## Docs
+Read full docs **[here](https://github.com/browserslist/caniuse-lite#readme)**.",
+node_modules\@babel\helpers\README.md,.md,302,302.00 B,Texto,,,"# @babel/helpers
+
+> Collection of helper functions used by Babel transforms.
+
+See our website [@babel/helpers](https://babeljs.io/docs/babel-helpers) for more information.
+
+## Install
+
+Using npm:
+
+```sh
+npm install --save-dev @babel/helpers
+```
+
+or using yarn:
+
+```sh
+yarn add @babel/helpers --dev
+```",
+node_modules\@babel\compat-data\README.md,.md,307,307.00 B,Texto,,,"# @babel/compat-data
+
+> The compat-data to determine required Babel plugins
+
+See our website [@babel/compat-data](https://babeljs.io/docs/babel-compat-data) for more information.
+
+## Install
+
+Using npm:
+
+```sh
+npm install --save @babel/compat-data
+```
+
+or using yarn:
+
+```sh
+yarn add @babel/compat-data
+```",
+node_modules\flatted\python\flatted.py,.py,3773,3.68 KB,Texto,,,"# ISC License
+#
+# Copyright (c) 2018-2025, Andrea Giammarchi, @WebReflection
+#
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED ""AS IS"" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+# REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+# AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+# INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+# LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
+# OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+# PERFORMANCE OF THIS SOFTWARE.
+
+import json as _json
+
+class _Known:
+    def __init__(self):",
+node_modules\punycode\LICENSE-MIT.txt,.txt,1077,1.05 KB,Texto,,,"Copyright Mathias Bynens <https://mathiasbynens.be/>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+""Software""), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.",
+node_modules\esquery\license.txt,.txt,1488,1.45 KB,Texto,,,"Copyright (c) 2013, Joel Feenstra
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+    * Neither the name of the ESQuery nor the names of its contributors may
+      be used to endorse or promote products derived from this software without
+      specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ""AS IS"" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL JOEL FEENSTRA BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;",
+node_modules\baseline-browser-mapping\LICENSE.txt,.txt,11357,11.09 KB,Texto,,,"                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      ""License"" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      ""Licensor"" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      ""Legal Entity"" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      ""control"" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the",
+node_modules\jsesc\LICENSE-MIT.txt,.txt,1077,1.05 KB,Texto,,,"Copyright Mathias Bynens <https://mathiasbynens.be/>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+""Software""), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.",
+node_modules\json-buffer\.travis.yml,.yml,38,38.00 B,Texto,,,"language: node_js
+node_js:
+  - '0.10'",
+node_modules\json-schema-traverse\spec\.eslintrc.yml,.yml,91,91.00 B,Texto,,,"parserOptions:
+  ecmaVersion: 6
+globals:
+  beforeEach: false
+  describe: false
+  it: false",
+.github\workflows\deploy.yml,.yml,919,919.00 B,Texto,,,"﻿name: Deploy Vite site to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+",
+node_modules\fast-json-stable-stringify\.github\FUNDING.yml,.yml,43,43.00 B,Texto,,,"tidelift: ""npm/fast-json-stable-stringify""",
+node_modules\json-stable-stringify-without-jsonify\.travis.yml,.yml,48,48.00 B,Texto,,,"language: node_js
+node_js:
+  - ""0.8""
+  - ""0.10""",
+node_modules\deep-is\.travis.yml,.yml,52,52.00 B,Texto,,,"language: node_js
+node_js:
+  - 0.6
+  - 0.8
+  - 0.10",
+node_modules\ajv\scripts\.eslintrc.yml,.yml,62,62.00 B,Texto,,,"rules:
+  no-console: 0
+  no-empty: [2, allowEmptyCatch: true]",
+node_modules\json-schema-traverse\.travis.yml,.yml,108,108.00 B,Texto,,,"language: node_js
+node_js:
+  - ""4""
+  - ""6""
+  - ""7""
+  - ""8""
+after_script:
+  - coveralls < coverage/lcov.info",
+node_modules\fast-json-stable-stringify\.travis.yml,.yml,111,111.00 B,Texto,,,"language: node_js
+node_js:
+  - ""8""
+  - ""10""
+  - ""12""
+  - ""13""
+after_script:
+  - coveralls < coverage/lcov.info",
+node_modules\json-stable-stringify-without-jsonify\.npmignore,[no_ext],13,13.00 B,Não inspecionado,,,,
+node_modules\eslint-plugin-react-hooks\LICENSE,[no_ext],1088,1.06 KB,Não inspecionado,,,,
+.git\objects\b5\6c22cde3d81f35217921d4a31129ae99987c92,[no_ext],22134,21.62 KB,Não inspecionado,,,,
+.git\HEAD,[no_ext],21,21.00 B,Não inspecionado,,,,
+node_modules\isexe\.npmignore,[no_ext],23,23.00 B,Não inspecionado,,,,
+node_modules\esrecurse\.babelrc,[no_ext],30,30.00 B,Não inspecionado,,,,
+.git\COMMIT_EDITMSG,[no_ext],37,37.00 B,Não inspecionado,,,,
+.git\refs\remotes\origin\main,[no_ext],41,41.00 B,Não inspecionado,,,,
+.git\refs\heads\main,[no_ext],41,41.00 B,Não inspecionado,,,,
+.git\objects\62\ed27af69396b0b0d1742a65892bdc14dc99415,[no_ext],52,52.00 B,Não inspecionado,,,,

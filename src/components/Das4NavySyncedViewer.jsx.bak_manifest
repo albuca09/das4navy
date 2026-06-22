@@ -1,0 +1,495 @@
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "./Das4NavySyncedViewer.css";
+
+function validLatLon(lat, lon) {
+  return (
+    lat !== null &&
+    lon !== null &&
+    lat !== undefined &&
+    lon !== undefined &&
+    Number.isFinite(Number(lat)) &&
+    Number.isFinite(Number(lon)) &&
+    Number(lat) >= -90 &&
+    Number(lat) <= 90 &&
+    Number(lon) >= -180 &&
+    Number(lon) <= 180
+  );
+}
+
+function fmt(x, d = 3) {
+  if (x === null || x === undefined || Number.isNaN(Number(x))) return "-";
+  return Number(x).toFixed(d);
+}
+
+function ms(t) {
+  const v = Date.parse(t);
+  return Number.isFinite(v) ? v : NaN;
+}
+
+function makeIcon(label, cls) {
+  return L.divIcon({
+    className: `dasnavy-marker ${cls}`,
+    html: `<div>${label}</div>`,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+  });
+}
+
+function makePulseIcon(cls) {
+  return L.divIcon({
+    className: `dasnavy-pulse ${cls}`,
+    html: `<div></div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+}
+
+const aisIcon = makeIcon("AIS", "ais");
+const dasIcon = makeIcon("DAS", "das");
+const cablePulseIcon = makePulseIcon("cable");
+
+export default function Das4NavySyncedViewer() {
+  const mapDiv = useRef(null);
+  const map = useRef(null);
+
+  const staticLayer = useRef(null);
+  const movingLayer = useRef(null);
+  const eventLayer = useRef(null);
+
+  const aisMarker = useRef(null);
+  const dasMarker = useRef(null);
+  const cablePulse = useRef(null);
+
+  const aisTrail = useRef(null);
+  const dasTrail = useRef(null);
+
+  const [scene, setScene] = useState(null);
+  const [frameIndex, setFrameIndex] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  const [speedMs, setSpeedMs] = useState(220);
+  const [showEvents, setShowEvents] = useState(true);
+
+  useEffect(() => {
+    fetch("/data/das4navy_scene_web.json")
+      .then((r) => {
+        if (!r.ok) throw new Error("das4navy_scene_web.json não encontrado.");
+        return r.json();
+      })
+      .then((j) => {
+        setScene(j);
+        setFrameIndex(0);
+      })
+      .catch((e) => {
+        console.error(e);
+        alert("Rode primeiro: python .\\scripts\\build_das4navy_visual_data.py");
+      });
+  }, []);
+
+  const frames = scene?.frames || [];
+  const currentFrame = frames[Math.min(frameIndex, Math.max(0, frames.length - 1))] || null;
+  const currentTimeMs = currentFrame ? ms(currentFrame.time_utc) : NaN;
+
+  const spectrograms = scene?.spectrogram_timeline || [];
+
+  const currentSpec = useMemo(() => {
+    if (!spectrograms.length || !Number.isFinite(currentTimeMs)) {
+      return spectrograms[0] || null;
+    }
+
+    let best = spectrograms[0];
+    let bestDist = Infinity;
+
+    for (const s of spectrograms) {
+      const a = ms(s.time_start_utc);
+      const b = ms(s.time_end_utc);
+
+      if (Number.isFinite(a) && Number.isFinite(b) && currentTimeMs >= a && currentTimeMs <= b) {
+        return s;
+      }
+
+      const center = Number.isFinite(a) && Number.isFinite(b) ? 0.5 * (a + b) : a;
+      const dist = Math.abs(currentTimeMs - center);
+
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = s;
+      }
+    }
+
+    return best;
+  }, [spectrograms, currentTimeMs]);
+
+  const cursorPct = useMemo(() => {
+    if (!currentSpec || !Number.isFinite(currentTimeMs)) return 50;
+
+    const a = ms(currentSpec.time_start_utc);
+    const b = ms(currentSpec.time_end_utc);
+
+    if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) return 50;
+
+    const p = 100 * (currentTimeMs - a) / (b - a);
+    return Math.max(0, Math.min(100, p));
+  }, [currentSpec, currentTimeMs]);
+
+  const xaiEvents = useMemo(() => {
+    const rows = scene?.xai_events_light || [];
+    return rows.map((e) => ({
+      ...e,
+      _ms: ms(e.time_utc),
+      _score: Number(e.score || 1),
+    }));
+  }, [scene]);
+
+  useEffect(() => {
+    if (!mapDiv.current || map.current) return;
+
+    map.current = L.map(mapDiv.current, {
+      preferCanvas: true,
+      zoomControl: true,
+      attributionControl: true,
+    });
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      maxZoom: 20,
+      attribution: "&copy; OpenStreetMap &copy; CARTO",
+    }).addTo(map.current);
+
+    staticLayer.current = L.layerGroup().addTo(map.current);
+    eventLayer.current = L.layerGroup().addTo(map.current);
+    movingLayer.current = L.layerGroup().addTo(map.current);
+
+    map.current.setView([45.2, -124.0], 9);
+
+    return () => {
+      map.current.remove();
+      map.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!scene || !map.current || !staticLayer.current || !movingLayer.current) return;
+
+    staticLayer.current.clearLayers();
+    movingLayer.current.clearLayers();
+
+    const bounds = L.latLngBounds([]);
+
+    // Cabos reais north/south
+    for (const cable of scene.cables || []) {
+      const coords = (cable.points || [])
+        .filter((p) => validLatLon(p.lat, p.lon))
+        .map((p) => [Number(p.lat), Number(p.lon)]);
+
+      if (coords.length < 2) continue;
+
+      const isNorth = String(cable.id).toLowerCase().includes("north");
+      const color = isNorth ? "#38bdf8" : "#22c55e";
+
+      const line = L.polyline(coords, {
+        color,
+        weight: 4,
+        opacity: 0.95,
+      });
+
+      line.bindPopup(`
+        <b>Cabo DAS ${cable.id}</b><br/>
+        Pontos: ${cable.n_points}<br/>
+        Fonte: ${cable.source_file || "-"}
+      `);
+
+      line.addTo(staticLayer.current);
+      coords.forEach((c) => bounds.extend(c));
+    }
+
+    // Trajetória AIS completa
+    const aisCoords = (scene.ais || [])
+      .filter((p) => validLatLon(p.lat, p.lon))
+      .map((p) => [Number(p.lat), Number(p.lon)]);
+
+    if (aisCoords.length > 1) {
+      L.polyline(aisCoords, {
+        color: "#f59e0b",
+        weight: 4,
+        opacity: 0.9,
+      })
+        .bindPopup("<b>Trajetória AIS completa — JEANOAH</b>")
+        .addTo(staticLayer.current);
+
+      aisCoords.forEach((c) => bounds.extend(c));
+    }
+
+    // Trajetória estimada pelo DAS
+    const dasCoords = (scene.das_estimate || [])
+      .filter((p) => validLatLon(p.lat, p.lon))
+      .map((p) => [Number(p.lat), Number(p.lon)]);
+
+    if (dasCoords.length > 1) {
+      L.polyline(dasCoords, {
+        color: "#fb7185",
+        weight: 4,
+        opacity: 0.95,
+        dashArray: "8 8",
+      })
+        .bindPopup("<b>Trajetória estimada pelo DAS</b>")
+        .addTo(staticLayer.current);
+
+      dasCoords.forEach((c) => bounds.extend(c));
+    }
+
+    aisTrail.current = L.polyline([], {
+      color: "#f59e0b",
+      weight: 7,
+      opacity: 1.0,
+    }).addTo(movingLayer.current);
+
+    dasTrail.current = L.polyline([], {
+      color: "#fb7185",
+      weight: 7,
+      opacity: 1.0,
+      dashArray: "7 7",
+    }).addTo(movingLayer.current);
+
+    aisMarker.current = L.marker([0, 0], {
+      icon: aisIcon,
+      zIndexOffset: 3000,
+    }).addTo(movingLayer.current);
+
+    dasMarker.current = L.marker([0, 0], {
+      icon: dasIcon,
+      zIndexOffset: 3000,
+    }).addTo(movingLayer.current);
+
+    cablePulse.current = L.marker([0, 0], {
+      icon: cablePulseIcon,
+      zIndexOffset: 3500,
+    }).addTo(movingLayer.current);
+
+    if (bounds.isValid()) {
+      map.current.fitBounds(bounds.pad(0.12));
+    }
+
+    setTimeout(() => {
+      if (map.current) map.current.invalidateSize();
+    }, 200);
+  }, [scene]);
+
+  useEffect(() => {
+    if (!scene || !playing || !frames.length) return;
+
+    const timer = setInterval(() => {
+      setFrameIndex((v) => (v + 1 >= frames.length ? 0 : v + 1));
+    }, speedMs);
+
+    return () => clearInterval(timer);
+  }, [scene, playing, frames.length, speedMs]);
+
+  useEffect(() => {
+    if (!scene || !currentFrame) return;
+    if (!aisMarker.current || !dasMarker.current || !cablePulse.current) return;
+
+    const aisPath = [];
+    const dasPath = [];
+
+    for (let i = 0; i <= frameIndex && i < frames.length; i++) {
+      const f = frames[i];
+
+      if (f.ais && validLatLon(f.ais.lat, f.ais.lon)) {
+        aisPath.push([Number(f.ais.lat), Number(f.ais.lon)]);
+      }
+
+      if (f.das && validLatLon(f.das.lat, f.das.lon)) {
+        dasPath.push([Number(f.das.lat), Number(f.das.lon)]);
+      }
+    }
+
+    if (aisTrail.current) aisTrail.current.setLatLngs(aisPath);
+    if (dasTrail.current) dasTrail.current.setLatLngs(dasPath);
+
+    if (currentFrame.ais && validLatLon(currentFrame.ais.lat, currentFrame.ais.lon)) {
+      aisMarker.current.setLatLng([
+        Number(currentFrame.ais.lat),
+        Number(currentFrame.ais.lon),
+      ]);
+
+      aisMarker.current.bindPopup(`
+        <b>JEANOAH — AIS</b><br/>
+        Tempo: ${currentFrame.time_utc}<br/>
+        SOG: ${fmt(currentFrame.ais.sog, 2)}<br/>
+        COG: ${fmt(currentFrame.ais.cog, 2)}<br/>
+        Heading: ${fmt(currentFrame.ais.heading, 2)}
+      `);
+    }
+
+    if (currentFrame.das && validLatLon(currentFrame.das.lat, currentFrame.das.lon)) {
+      dasMarker.current.setLatLng([
+        Number(currentFrame.das.lat),
+        Number(currentFrame.das.lon),
+      ]);
+
+      cablePulse.current.setLatLng([
+        Number(currentFrame.das.lat),
+        Number(currentFrame.das.lon),
+      ]);
+
+      dasMarker.current.bindPopup(`
+        <b>Estimativa DAS</b><br/>
+        Tempo: ${currentFrame.time_utc}<br/>
+        Canal: ${fmt(currentFrame.das.channel, 0)}<br/>
+        Cabo: ${currentFrame.das.cable || "-"}<br/>
+        Score: ${fmt(currentFrame.das.score)}<br/>
+        Erro: ${fmt(currentFrame.das.error)}
+      `);
+    }
+  }, [scene, frames, currentFrame, frameIndex]);
+
+  useEffect(() => {
+    if (!eventLayer.current) return;
+
+    eventLayer.current.clearLayers();
+
+    if (!showEvents || !Number.isFinite(currentTimeMs)) return;
+
+    const windowMs = 2500;
+
+    const nearby = xaiEvents
+      .filter((e) => Number.isFinite(e._ms) && Math.abs(e._ms - currentTimeMs) <= windowMs)
+      .sort((a, b) => b._score - a._score)
+      .slice(0, 120);
+
+    for (const ev of nearby) {
+      if (!validLatLon(ev.lat, ev.lon)) continue;
+
+      const radius = Math.max(4, Math.min(15, 3 + Number(ev.score || 1)));
+
+      L.circleMarker([Number(ev.lat), Number(ev.lon)], {
+        radius,
+        color: "#e879f9",
+        fillColor: "#e879f9",
+        fillOpacity: 0.52,
+        weight: 1.3,
+      })
+        .bindPopup(`
+          <b>Fluxo / perturbação DAS-XAI</b><br/>
+          Tempo: ${ev.time_utc}<br/>
+          Canal: ${ev.channel}<br/>
+          Canal mapeado: ${ev.mapped_channel || "-"}<br/>
+          Cabo: ${ev.mapped_cable || "-"}<br/>
+          Score: ${fmt(ev.score)}
+        `)
+        .addTo(eventLayer.current);
+    }
+  }, [xaiEvents, currentTimeMs, showEvents]);
+
+  const meta = scene?.metadata || {};
+  const nFrames = frames.length;
+
+  return (
+    <div className="sync-page">
+      <section className="sync-left">
+        <div className="spec-stage">
+          {currentSpec?.image_url ? (
+            <img
+              className="spec-img"
+              src={currentSpec.image_url}
+              alt="DAS spectrogram"
+            />
+          ) : (
+            <div className="spec-empty">
+              Nenhum espectrograma encontrado.
+              <br />
+              Rode o pipeline DAS/XAI e depois build_das4navy_visual_data.py.
+            </div>
+          )}
+
+          <div className="spec-cursor-v" style={{ left: `${cursorPct}%` }} />
+          <div className="spec-cursor-h" />
+          <div className="spec-time-chip" style={{ left: `${cursorPct}%` }}>
+            {currentFrame?.time_utc || "-"}
+          </div>
+
+          <div className="spec-info">
+            <b>Espectrograma DAS/XAI</b>
+            <span>Canal: {fmt(currentSpec?.channel, 0)}</span>
+            <span>Prob.: {fmt(currentSpec?.probability, 3)}</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="sync-right">
+        <div className="map-title">
+          <h1>DAS4NAVY</h1>
+          <p>JEANOAH — cabos DAS, AIS, estimativa e fluxo temporal nos canais</p>
+        </div>
+
+        <div ref={mapDiv} className="map-real" />
+
+        <div className="control-panel">
+          <div className="control-row time-row">
+            <b>{currentFrame?.time_utc || "-"}</b>
+          </div>
+
+          <div className="control-grid">
+            <div>
+              <span>Cabos</span>
+              <b>{meta.n_cables || 0}</b>
+            </div>
+            <div>
+              <span>AIS</span>
+              <b>{meta.n_ais_points || 0}</b>
+            </div>
+            <div>
+              <span>DAS</span>
+              <b>{meta.n_das_estimate_points || 0}</b>
+            </div>
+            <div>
+              <span>XAI</span>
+              <b>{meta.n_xai_events || 0}</b>
+            </div>
+          </div>
+
+          <div className="buttons">
+            <button onClick={() => setPlaying(!playing)}>
+              {playing ? "Pause" : "Play"}
+            </button>
+            <button onClick={() => setFrameIndex(0)}>Reset</button>
+          </div>
+
+          <input
+            type="range"
+            min="0"
+            max={Math.max(0, nFrames - 1)}
+            value={frameIndex}
+            onChange={(e) => setFrameIndex(Number(e.target.value))}
+          />
+
+          <div className="bottom-options">
+            <label>
+              <input
+                type="checkbox"
+                checked={showEvents}
+                onChange={(e) => setShowEvents(e.target.checked)}
+              />
+              Eventos DAS/XAI no tempo atual
+            </label>
+
+            <select value={speedMs} onChange={(e) => setSpeedMs(Number(e.target.value))}>
+              <option value="600">Lento</option>
+              <option value="220">Normal</option>
+              <option value="80">Rápido</option>
+            </select>
+          </div>
+
+          <div className="legend">
+            <p><span className="ln north"></span>Cabo north</p>
+            <p><span className="ln south"></span>Cabo south</p>
+            <p><span className="ln ais"></span>AIS JEANOAH</p>
+            <p><span className="ln das"></span>Estimativa DAS</p>
+            <p><span className="dot event"></span>Fluxo/canal XAI</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
