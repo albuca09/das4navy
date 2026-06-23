@@ -137,7 +137,7 @@ export default function Das4NavySyncedViewer() {
   const [scene, setScene] = useState(null);
   const [frameIndex, setFrameIndex] = useState(0);
   const [playing, setPlaying] = useState(true);
-  const [speedMs, setSpeedMs] = useState(220);
+const [speedMs, setSpeedMs] = useState(220);
   const [showEvents, setShowEvents] = useState(true);
   const [manifestSpecs, setManifestSpecs] = useState([]);
 
@@ -192,44 +192,48 @@ export default function Das4NavySyncedViewer() {
 
 
   const currentSpec = useMemo(() => {
-    if (!spectrograms.length || !Number.isFinite(currentTimeMs)) {
-      return spectrograms[0] || null;
+    const list = Array.isArray(spectrograms) ? spectrograms : [];
+
+    if (list.length === 0) {
+      return null;
     }
 
-    let best = spectrograms[0];
-    let bestDist = Infinity;
+    if (!Number.isFinite(currentTimeMs)) {
+      return list[0] || null;
+    }
 
-    for (const s of spectrograms) {
-      const a = ms(s.time_start_utc);
-      const b = ms(s.time_end_utc);
+    let best = list[0] || null;
+    let bestScore = Infinity;
 
-      if (Number.isFinite(a) && Number.isFinite(b) && currentTimeMs >= a && currentTimeMs <= b) {
-        return s;
+    for (const sp of list) {
+      if (!sp) continue;
+
+      const a = ms(sp.time_start_utc);
+      const b = ms(sp.time_end_utc);
+
+      let score = Infinity;
+
+      if (Number.isFinite(a) && Number.isFinite(b) && b > a) {
+        if (currentTimeMs >= a && currentTimeMs <= b) {
+          score = 0;
+        } else {
+          const center = 0.5 * (a + b);
+          score = Math.abs(currentTimeMs - center);
+        }
+      } else if (Number.isFinite(a)) {
+        score = Math.abs(currentTimeMs - a);
       }
 
-      const center = Number.isFinite(a) && Number.isFinite(b) ? 0.5 * (a + b) : a;
-      const dist = Math.abs(currentTimeMs - center);
-
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = s;
+      if (score < bestScore) {
+        bestScore = score;
+        best = sp;
       }
     }
 
-    return best;
+    return best || list[0] || null;
   }, [spectrograms, currentTimeMs]);
 
-  const cursorPct = useMemo(() => {
-    if (!currentSpec || !Number.isFinite(currentTimeMs)) return 50;
 
-    const a = ms(currentSpec.time_start_utc);
-    const b = ms(currentSpec.time_end_utc);
-
-    if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) return 50;
-
-    const p = 100 * (currentTimeMs - a) / (b - a);
-    return Math.max(0, Math.min(100, p));
-  }, [currentSpec, currentTimeMs]);
 
   const xaiEvents = useMemo(() => {
     const rows = scene?.xai_events_light || [];
@@ -501,10 +505,34 @@ export default function Das4NavySyncedViewer() {
   }, [xaiEvents, currentTimeMs, showEvents]);
 
   const meta = scene?.metadata || {};
-  const nFrames = frames.length;
+
+  const nFrames = Array.isArray(frames) ? frames.length : 0;
+
+  // Single-pass global cursor:
+  // the red line moves continuously from left to right only once
+  // across the full animation timeline.
+  const cursorPct = useMemo(() => {
+    if (!Number.isFinite(frameIndex) || !Number.isFinite(nFrames) || nFrames <= 1) {
+      return 0;
+    }
+
+    const p = (frameIndex / (nFrames - 1)) * 100;
+    return Math.max(0, Math.min(100, p));
+  }, [frameIndex, nFrames]);
+
+  // Stop playback exactly at the final frame.
+  // This keeps the red cursor as a single left-to-right passage.
+  useEffect(() => {
+    if (!playing || nFrames <= 1) return;
+
+    if (frameIndex >= nFrames - 1) {
+      setPlaying(false);
+      setFrameIndex(nFrames - 1);
+    }
+  }, [frameIndex, nFrames, playing]);
 
 
-  // Continuous video frame for the left panel.
+// Continuous video frame for the left panel.
   // Maps the map-animation index to the spectrogram sequence.
   const videoSpec = useMemo(() => {
     if (!Array.isArray(spectrograms) || spectrograms.length === 0) {
@@ -538,14 +566,6 @@ export default function Das4NavySyncedViewer() {
               className="spec-img spec-video-img"
               src={assetUrl(videoSpec?.image_url || currentSpec?.image_url)}
               alt="DAS/XAI spectrogram video frame"
-              onError={(e) => {
-                console.warn("Spectrogram image failed:", e.currentTarget.src);
-                e.currentTarget.style.opacity = 0.15;
-                setFrameIndex((v) => {
-                  if (!Array.isArray(frames) || frames.length <= 1) return v;
-                  return (v + 1) % frames.length;
-                });
-              }}
             />
           ) : (
             <div className="spec-empty">
@@ -555,9 +575,9 @@ export default function Das4NavySyncedViewer() {
             </div>
           )}
 
-          <div className="spec-cursor-v" style={{ left: `clamp(90px, ${cursorPct}%, calc(100% - 115px))` }} />
+          <div className="spec-cursor-v" style={{ left: `${cursorPct}%` }} />
           <div className="spec-cursor-h" />
-          <div className="spec-time-chip" style={{ left: `clamp(90px, ${cursorPct}%, calc(100% - 115px))` }}>
+          <div className="spec-time-chip" style={{ left: `${cursorPct}%` }}>
             {currentFrame?.time_utc || "-"}
           </div>
 

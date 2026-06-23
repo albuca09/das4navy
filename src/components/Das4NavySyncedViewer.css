@@ -685,3 +685,16 @@ body,
   display: none !important;
 }
 
+
+/* single-pass red cursor smoothing */
+.spec-cursor-v,
+.spec-time-chip {
+  transition: left 70ms linear !important;
+}
+
+
+/* hide horizontal red cursor */
+.spec-cursor-h {
+  display: none !important;
+}
+
